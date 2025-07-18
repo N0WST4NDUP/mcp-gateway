@@ -14,6 +14,7 @@ public class AdaptersRouter {
   @Bean
   public RouterFunction<ServerResponse> route(AdaptersHandler handler) {
     return RouterFunctions.route()
+            .GET("/adapters", handler::getAdapters)
             .POST("/adapters", handler::registerAdapter)
             .DELETE("/adapters/{name}", handler::deleteAdapter)
             .build();
