@@ -16,7 +16,9 @@ public class AdaptersRouter {
     return RouterFunctions.route()
             .GET("/adapters", handler::getAdapters)
             .POST("/adapters", handler::registerAdapter)
-            .DELETE("/adapters/{name}", handler::deleteAdapter)
+            .GET("/adapters/{server}", handler::stream)
+            .POST("/adapters/{server}", handler::useAdapter)
+            .DELETE("/adapters/{server}", handler::deleteAdapter)
             .build();
   }
 

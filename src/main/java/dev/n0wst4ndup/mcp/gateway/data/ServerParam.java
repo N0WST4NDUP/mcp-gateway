@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 public class ServerParam {
-  private boolean isPremium;
+  private boolean premium;
   private String command;
   private List<String> args;
   private Map<String, String> env;
