@@ -68,16 +68,16 @@ public class McpAsyncClientManager {
     return  Flux.fromIterable(clients.values())
                 .flatMap(mono -> mono)
                 .filter(client -> client.getServerName().equals(server))
-                .reduce((c1, c2) -> c1.getAllocatedCount().get() <= c2.getAllocatedCount().get() ? c1 : c2);
+                .reduce((c1, c2) -> c1.getAllocatedCount() <= c2.getAllocatedCount() ? c1 : c2);
   }
   
-  public Mono<CallToolResult> test(String sessionId, CallToolRequest toolReq) {
+  public Mono<ManagedClient> test(String sessionId) {
     Mono<ManagedClient> mono = clients.get(sessionId);
     
     if (mono == null) { // 키에 해당하는 클라이언트가 없는 경우 예외 처리
       return Mono.error(new NoSuchElementException("No client for session: " + sessionId));
     }
 
-    return mono.flatMap(client -> client.getMcpClient().callTool(toolReq));
+    return mono;
   }
 }

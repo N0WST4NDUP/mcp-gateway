@@ -8,7 +8,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import dev.n0wst4ndup.mcp.gateway.data.ServerInfo;
 import dev.n0wst4ndup.mcp.gateway.data.ServerParam;
 import dev.n0wst4ndup.mcp.gateway.service.McpAsyncClientManager;
-import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.JSONRPCRequest;
+import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse;
+import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse.JSONRPCError;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -54,23 +57,43 @@ public class AdaptersHandler {
   }
 
   public Mono<ServerResponse> useAdapter(ServerRequest request) {
-    String server = request.pathVariable("server");
-    log.info("useAdapter 호출됨 - server: {}", server);
-
     if (request.headers().header("Mcp-Session-Id").isEmpty()) {
-      return clientManager.connect(server)
-                          .doOnNext(client -> log.info("Connected: sessionId={}, initResult={}", client.getSessionId(), client.getInitResult()))
-                          .flatMap(client ->  ServerResponse.ok()
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue(client.getInitResult()));
+      String server = request.pathVariable("server");
+
+      return request.bodyToMono(JSONRPCRequest.class)
+                    .doOnNext(req -> log.info("Init Request received: {}", req))
+                    .flatMap( req -> clientManager.connect(server)
+                                                  .flatMap(client -> {
+                                                    JSONRPCResponse response = new JSONRPCResponse(req.jsonrpc(), req.id(), client.getInitResult(), null);
+
+                                                    return  ServerResponse.ok()
+                                                                          .contentType(MediaType.APPLICATION_JSON)
+                                                                          .header("Mcp-Session-Id", client.getSessionId())
+                                                                          .bodyValue(response);
+                                                  }));
     } else {
-      return request.bodyToMono(CallToolRequest.class)
-                    .doOnNext(req -> log.info("CallToolRequest received: {}", req))
-                    .flatMap(req ->  clientManager.test(server, req)
-                                                  .doOnNext(result -> log.info("CallToolResult: {}", result)))
-                    .flatMap(result ->  ServerResponse.ok()
-                                                      .contentType(MediaType.APPLICATION_JSON)
-                                                      .bodyValue(result));
+      String sessionId = request.headers().header("Mcp-Session-Id").getFirst();
+
+      return request.bodyToMono(JSONRPCRequest.class)
+                    .doOnNext(req -> log.info("Use Adapter Request received: {}", req))
+                    .flatMap( req -> clientManager.test(sessionId)
+                                                  .flatMap(client -> {
+                                                    return switch(req.method()) {
+                                                      case McpSchema.METHOD_TOOLS_LIST -> {
+                                                        yield client.listTools().map(result -> new JSONRPCResponse(req.jsonrpc(), req.id(), result, null));
+                                                      }
+                                                      case McpSchema.METHOD_TOOLS_CALL -> {
+                                                         
+                                                        yield null;
+                                                      }
+                                                        // client.callTool(null).map(result -> new JSONRPCResponse(req.jsonrpc(), req.id(), result, null));
+                                                      default -> 
+                                                        Mono.just(new JSONRPCResponse(req.jsonrpc(), req.id(), null, new JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND, "METHOD_NOT_FOUND: ", null)));
+                                                    };
+                                                  }))
+                    .flatMap( response -> ServerResponse.ok()
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue(response));
     }
   }
 

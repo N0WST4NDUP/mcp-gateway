@@ -1,17 +1,15 @@
 package dev.n0wst4ndup.mcp.gateway.data;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import reactor.core.publisher.Mono;
 
-@Getter
-@Slf4j
 public class ManagedClient {
 
   private final String sessionId;
@@ -31,8 +29,22 @@ public class ManagedClient {
   }
 
   public static Mono<ManagedClient> asyncOf(String sid, McpAsyncClient client, boolean premium) {
-    log.info("클라이언트 init");
     return  client.initialize()
                   .map(result -> new ManagedClient(sid, client.getServerInfo().name(), client, premium, result));
+  }
+
+  public String getSessionId() { return sessionId; }
+  public String getServerName() { return serverName; } 
+  public boolean isPremium() { return premium; }
+  public int getAllocatedCount() { return allocatedCount.get(); }
+  public ReentrantLock getLock() { return clientLock; }
+  public InitializeResult getInitResult() { return initResult; }
+
+  public Mono<ListToolsResult> listTools() {
+    return mcpClient.listTools();
+  }
+
+  public Mono<CallToolResult> callTool(CallToolRequest callToolRequest) {
+    return mcpClient.callTool(callToolRequest);
   }
 }
