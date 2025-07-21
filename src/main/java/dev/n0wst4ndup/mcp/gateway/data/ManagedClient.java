@@ -15,16 +15,16 @@ public class ManagedClient {
   private final String sessionId;
   private final String serverName;
   private final McpAsyncClient mcpClient;
-  private final boolean premium;
+  private final boolean isPremium;
   private final AtomicInteger allocatedCount = new AtomicInteger(0);
   private final ReentrantLock clientLock = new ReentrantLock();
   private final InitializeResult initResult;
 
-  private ManagedClient(String sessionId, String serverName, McpAsyncClient client, boolean premium, InitializeResult initResult) {
+  private ManagedClient(String sessionId, String serverName, McpAsyncClient client, boolean isPremium, InitializeResult initResult) {
     this.sessionId = sessionId;
     this.serverName = serverName;
     this.mcpClient = client;
-    this.premium = premium;
+    this.isPremium = isPremium;
     this.initResult = initResult;
   }
 
@@ -35,11 +35,18 @@ public class ManagedClient {
 
   public String getSessionId() { return sessionId; }
   public String getServerName() { return serverName; } 
-  public boolean isPremium() { return premium; }
+  public boolean isPremium() { return isPremium; }
   public int getAllocatedCount() { return allocatedCount.get(); }
   public ReentrantLock getLock() { return clientLock; }
-  public InitializeResult getInitResult() { return initResult; }
 
+  public Mono<InitializeResult> initialize() {
+    return Mono.just(initResult);
+  }
+
+  public Mono<Void> close() {
+    return mcpClient.closeGracefully();
+  }
+  
   public Mono<ListToolsResult> listTools() {
     return mcpClient.listTools();
   }
