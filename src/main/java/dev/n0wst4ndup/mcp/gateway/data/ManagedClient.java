@@ -50,7 +50,7 @@ public class ManagedClient {
   
   public Mono<ListToolsResult> listTools() {
     recordAccess();
-    return mcpClient.listTools();
+    return mcpClient.listTools().cache();
   }
 
   public Mono<CallToolResult> callTool(CallToolRequest callToolRequest) {
