@@ -31,7 +31,7 @@ public class McpAsyncClientManager {
   public Flux<ServerInfo> getServers() {
     return  Flux.fromIterable(clients.values())
                 .flatMap(mono -> mono)
-                .map(client -> new ServerInfo(client.getServerName(), client.getAllocatedCount()));
+                .map(client -> new ServerInfo(client.getServerName(), client.getLastAccessed()));
   }
   
   public Mono<Void> createNewClient(ServerParam serverParam) {
@@ -65,13 +65,14 @@ public class McpAsyncClientManager {
     return  Flux.fromIterable(clients.values())
                 .flatMap(mono -> mono)
                 .filter(client -> client.getServerName().equals(server))
-                .reduce((c1, c2) -> c1.getAllocatedCount() <= c2.getAllocatedCount() ? c1 : c2);
+                .reduce((c1, c2) -> c1.getLastAccessed().isBefore(c2.getLastAccessed()) ? c1 : c2)
+                .switchIfEmpty(Mono.error(new NoSuchElementException("No client for session: " + server)));
   }
   
   public Mono<ManagedClient> connected(String sessionId) {
     Mono<ManagedClient> mono = clients.get(sessionId);
     
-    if (mono == null) { // 키에 해당하는 클라이언트가 없는 경우 예외 처리
+    if (mono == null) {
       return Mono.error(new NoSuchElementException("No client for session: " + sessionId));
     }
 

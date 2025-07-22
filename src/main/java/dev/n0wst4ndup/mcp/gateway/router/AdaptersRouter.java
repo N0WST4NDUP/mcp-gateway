@@ -12,13 +12,14 @@ import dev.n0wst4ndup.mcp.gateway.handler.AdaptersHandler;
 public class AdaptersRouter {
   
   @Bean
-  public RouterFunction<ServerResponse> route(AdaptersHandler handler) {
+  public RouterFunction<ServerResponse> adapterRouter(AdaptersHandler handler) {
     return RouterFunctions.route()
             .GET("/adapters", handler::getAdapters)
             .POST("/adapters", handler::registerAdapter)
+            .DELETE("/adapters", handler::deleteAdapter)
             .GET("/adapters/{server}", handler::stream)
             .POST("/adapters/{server}", handler::useAdapter)
-            .DELETE("/adapters/{server}", handler::deleteAdapter)
+            .DELETE("/adapters/{server}", handler::disconnect)
             .build();
   }
 

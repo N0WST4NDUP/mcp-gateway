@@ -1,7 +1,7 @@
 package dev.n0wst4ndup.mcp.gateway.data;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -16,8 +16,7 @@ public class ManagedClient {
   private final String serverName;
   private final McpAsyncClient mcpClient;
   private final boolean isPremium;
-  private final AtomicInteger allocatedCount = new AtomicInteger(0);
-  private final ReentrantLock clientLock = new ReentrantLock();
+  private final AtomicReference<Instant> lastAccessed = new AtomicReference<>();
   private final InitializeResult initResult;
 
   private ManagedClient(String sessionId, String serverName, McpAsyncClient client, boolean isPremium, InitializeResult initResult) {
@@ -26,20 +25,22 @@ public class ManagedClient {
     this.mcpClient = client;
     this.isPremium = isPremium;
     this.initResult = initResult;
+    recordAccess();
   }
 
   public static Mono<ManagedClient> asyncOf(String sid, McpAsyncClient client, boolean premium) {
     return  client.initialize()
-                  .map(result -> new ManagedClient(sid, client.getServerInfo().name(), client, premium, result));
+                  .map(result -> new ManagedClient(sid, client.getServerInfo().name(), client, premium, result))
+                  .cache();
   }
 
   public String getSessionId() { return sessionId; }
   public String getServerName() { return serverName; } 
   public boolean isPremium() { return isPremium; }
-  public int getAllocatedCount() { return allocatedCount.get(); }
-  public ReentrantLock getLock() { return clientLock; }
+  public Instant getLastAccessed() { return lastAccessed.get(); }
 
   public Mono<InitializeResult> initialize() {
+    recordAccess();
     return Mono.just(initResult);
   }
 
@@ -48,10 +49,16 @@ public class ManagedClient {
   }
   
   public Mono<ListToolsResult> listTools() {
+    recordAccess();
     return mcpClient.listTools();
   }
 
   public Mono<CallToolResult> callTool(CallToolRequest callToolRequest) {
+    recordAccess();
     return mcpClient.callTool(callToolRequest);
+  }
+
+  private final void recordAccess() { 
+    lastAccessed.set(Instant.now()); 
   }
 }

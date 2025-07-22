@@ -17,7 +17,6 @@ import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse.JSONRPCError;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -49,15 +48,9 @@ public class AdaptersHandler {
   }
 
   public Mono<ServerResponse> stream(ServerRequest request) {
-    Flux<String> updatesFlux = Flux.create(emitter -> {
-      emitter.next("{\"status\":\"progress\",\"percent\":40}");
-      emitter.next("{\"status\":\"done\"}");
-      emitter.complete();
-    });
-
     return  ServerResponse.ok()
                           .contentType(MediaType.TEXT_EVENT_STREAM)
-                          .body(updatesFlux, String.class);
+                          .bodyValue("GET!!");
   }
 
   public Mono<ServerResponse> useAdapter(ServerRequest request) {
@@ -65,7 +58,6 @@ public class AdaptersHandler {
     String mcpSessionId = request.headers().firstHeader("Mcp-Session-Id");
 
     return request.bodyToMono(JSONRPCRequest.class)
-                  .doOnNext(req -> log.info("Use Adaper Request: {}", req))
                   .flatMap(req -> 
                     strategies.stream()
                     .filter(strategy -> strategy.supports(req.method()))
@@ -75,5 +67,18 @@ public class AdaptersHandler {
                       .contentType(MediaType.APPLICATION_JSON)
                       .bodyValue(new JSONRPCResponse(req.jsonrpc(), req.id(), null, new JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND, "METHOD_NOT_FOUND: ", req.method())))));
   }
+
+  public Mono<ServerResponse> disconnect(ServerRequest request) {
+    String mcpSessionId = request.headers().firstHeader("Mcp-Session-Id");
+
+    if (mcpSessionId == null || mcpSessionId.isBlank()) {
+      return  ServerResponse.badRequest()
+                            .bodyValue("Missing or blank Mcp-Session-Id header");
+    }
+
+    log.info("Disconnect Request: {}", request.method());
+
+    return Mono.empty();
+  } 
 
 }

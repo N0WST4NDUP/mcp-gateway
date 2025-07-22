@@ -21,7 +21,7 @@ public class ToolsListStrategy implements AdapterStrategy {
   }
   @Override
   public Mono<ServerResponse> handle(JSONRPCRequest request, McpAsyncClientManager clientManager, String server, String mcpSessionId) {
-    log.info("Tool Request: {}", request);
+    log.info("Tools/List Request: {}", request);
     if (mcpSessionId == null || mcpSessionId.isBlank()) {
       return  ServerResponse.ok()
                             .contentType(MediaType.APPLICATION_JSON)
