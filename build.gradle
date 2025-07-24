@@ -29,13 +29,26 @@ ext {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+  // webflux
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+  // mcp client
 	implementation 'org.springframework.ai:spring-ai-starter-mcp-client-webflux'
+  // r2dbc - postgres
+  implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+  implementation 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
+  // security
+  implementation 'org.springframework.boot:spring-boot-starter-security'
+  implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+  // redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+  // health check
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+  // lombok
 	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
+  // devtool
+  developmentOnly 'org.springframework.boot:spring-boot-devtools'
+  // test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
